@@ -14,8 +14,7 @@ namespace HelloWorld
 
         //Lista dos materiales dispoñibles
         public List<Material> materials = new List<Material>();
-        //Lista dos IDs dos materiales que xa están asignados
-        public List<int> takenMaterialIds = new List<int>();
+        
 
         private MeshRenderer meshRenderer;
         private float speed = 40f;
@@ -23,8 +22,16 @@ namespace HelloWorld
         //ID do equipo que está cheo, 0 por defecto cando non hai ningún
         private int fullTeamID = 0;
 
+        //Variable que dicta o tamaño máximo de un equipo
+        public int maxTeamMembers = 2;
+
         public override void OnNetworkSpawn()
         {
+            if (IsOwner)
+            {
+                ChangeTeamIdServerRpc(-1);
+            }
+            materialID.OnValueChanged += OnColorChanged;
             if (IsOwner)
             {
                 //Nada mais spawnear si é propietario spawnearase nunha posición aleatoria do centro
@@ -69,7 +76,8 @@ namespace HelloWorld
         [ServerRpc]
         void SetMaterialIdServerRpc(ServerRpcParams rpcParams = default)
         {
-            if(teamID.Value == 0)
+            GameManager.instance.UpdateTakenIdsList();
+            if (teamID.Value == 0)
             {
                 materialID.Value = 0;
             }
@@ -77,17 +85,19 @@ namespace HelloWorld
             {
                 do
                 {
+                    Debug.Log("Dando un material");
                     materialID.Value = Random.Range(1, 4);
 
-                } while (takenMaterialIds.Contains(materialID.Value));
+                } while (GameManager.instance.takenMaterialIds.Contains(materialID.Value));
             }
             else 
             {
                 do
                 {
+                    Debug.Log("Dando un material");
                     materialID.Value = Random.Range(4, materials.Count);
 
-                } while (takenMaterialIds.Contains(materialID.Value));
+                } while (GameManager.instance.takenMaterialIds.Contains(materialID.Value));
             }
         }
 
@@ -98,7 +108,7 @@ namespace HelloWorld
         public void MoveADRequestServerRpc(Vector3 direction)
         {
             transform.position += (direction * speed * Time.deltaTime);
-            if(transform.position.x > 10 && GameManager.instance.playersInTeam2.Value < 2)
+            if(transform.position.x > 10 && GameManager.instance.playersInTeam2.Value < maxTeamMembers)
             {
                 if (teamID.Value != 2)
                 {
@@ -107,7 +117,7 @@ namespace HelloWorld
                 }
                 
             }
-            else if(transform.position.x < -10 && GameManager.instance.playersInTeam1.Value < 2)
+            else if(transform.position.x < -10 && GameManager.instance.playersInTeam1.Value < maxTeamMembers)
             {
                 if (teamID.Value != 1)
                 {
@@ -135,12 +145,12 @@ namespace HelloWorld
         //Mira si hai algún equipo cheo, devolve true si é o caso e cambia a fullTeamID en consecuencia, se non devolve False e seteaa a 0
         private bool TeamFull()
         {
-            if(GameManager.instance.playersInTeam1.Value >= 2)
+            if(GameManager.instance.playersInTeam1.Value >= maxTeamMembers)
             {
                 fullTeamID = 1;
                 return true;
             }
-            else if (GameManager.instance.playersInTeam2.Value >= 2)
+            else if (GameManager.instance.playersInTeam2.Value >= maxTeamMembers)
             {
                 fullTeamID = 2;
                 return true;
@@ -152,15 +162,15 @@ namespace HelloWorld
             }
         }
 
-        //Este método encárgase de actualizar a lista dos IDs materiales que están collidos
-        //Sí, esto debería chamarse desde un OnValueChange... non teño moi claro como se fai e non me vou a liar con eso ahora, perdón :c
-        public void UpdateTakenIdsList()
+        public override void OnNetworkDespawn()
         {
-            takenMaterialIds = new List<int>();
-            foreach (ulong uid in NetworkManager.Singleton.ConnectedClientsIds)
-            {
-                takenMaterialIds.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().materialID.Value);
-            }
+            materialID.OnValueChanged -= OnColorChanged;
+        }
+        public void OnColorChanged(int previousValue, int newValue)
+        {
+            Debug.Log("Holita?");
+            meshRenderer = GetComponent<MeshRenderer>();
+            meshRenderer.material = materials[materialID.Value];
         }
         //Non hai moito que explicar aquí, detecta as teclas de movemento sempre que non haxa un equipo cheo ou seas de ese equipo si está cheo
         //E ao final dille a cada un de que color debe ser e actualiza a lista dos colores que están collidos
@@ -192,9 +202,6 @@ namespace HelloWorld
                     }
                 }
             }
-            meshRenderer = GetComponent<MeshRenderer>();
-            meshRenderer.material = materials[materialID.Value];
-            UpdateTakenIdsList();
         }
     }
 }

@@ -161,7 +161,11 @@ namespace HelloWorld
                     GameManager.instance.playersInTeam1.Value--;
 
                 }
-                ChangeTeamIdServerRpc(0);
+                if (teamID.Value != 0)
+                {
+                    ChangeTeamIdServerRpc(0);
+                }
+                    
             }
         }
 
@@ -185,8 +189,11 @@ namespace HelloWorld
         [ClientRpc]
         public void SetCanMoveClientRpc(ClientRpcParams clientRpcParams = default)
         {
-            foreach(ulong clientId in clientRpcParams.Send.TargetClientIds)
+            if (!IsOwner) return;
+            Debug.Log(clientRpcParams.Send.TargetClientIds == null);
+            foreach (ulong clientId in clientRpcParams.Send.TargetClientIds)
             {
+                Debug.Log(clientId == NetworkManager.Singleton.LocalClient.ClientId);
                 if(clientId == NetworkManager.Singleton.LocalClient.ClientId){
                     ChangeCanMoveServerRpc(false);
                 }

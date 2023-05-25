@@ -136,6 +136,7 @@ namespace HelloWorld
                 Send = new ClientRpcSendParams {TargetClientIds = playersThatCantMove}
             };
 
+            Debug.Log("Lista que manda o server"+playersThatCantMove.Count);
             Player.instance.SetCanMoveClientRpc(clientRpcParams);
         }
     }

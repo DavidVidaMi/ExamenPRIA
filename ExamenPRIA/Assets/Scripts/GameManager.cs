@@ -67,7 +67,10 @@ namespace HelloWorld
                 if (NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsClient)
                 {
                     foreach (ulong uid in NetworkManager.Singleton.ConnectedClientsIds)
-                        NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().SpawnInCenter();
+                    {
+                        //Modificamos manualmente a posición de todos os players na lista porque chamando a serverRPC non parece funcionar
+                        NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().transform.position = Player.RandomStartingPosition();
+                    }
                 }
                 else
                 {

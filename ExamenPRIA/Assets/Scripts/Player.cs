@@ -27,6 +27,7 @@ namespace HelloWorld
 
         public override void OnNetworkSpawn()
         {
+            //Iniciamos a teamId a -1 para que pinte o material por defecto cando cambie a 0
             if (IsOwner)
             {
                 ChangeTeamIdServerRpc(-1);
@@ -48,9 +49,9 @@ namespace HelloWorld
         //Move ao xogador a unha posición aleatoria do centro do taboleiro e mira si ven de algún dos equipos para controlar a cantidade de xogadores que hai en cada un e restar 1 se é preciso
         //Despois asígnaselle o ID do equipo 0
         [ServerRpc]
-        void SetRandomStartingPositionServerRpc(ServerRpcParams rpcParams = default)
+        public void SetRandomStartingPositionServerRpc(ServerRpcParams rpcParams = default)
         {
-            transform.position = new Vector3(Random.Range(-10f, 10f), 0f, Random.Range(-3f, 3f));
+            transform.position = RandomStartingPosition();
             if (teamID.Value == 2)
             {
                 GameManager.instance.playersInTeam2.Value--;
@@ -62,6 +63,11 @@ namespace HelloWorld
 
             }
             ChangeTeamIdServerRpc(0);
+        }
+
+        public static Vector3 RandomStartingPosition()
+        {
+            return new Vector3(Random.Range(-10f, 10f), 0f, Random.Range(-3f, 3f));
         }
 
         //Dalle ao cliente a ID do equipo ao que pertence e chamase a un método que se encarga de poñerlle o color axeitado
@@ -85,7 +91,6 @@ namespace HelloWorld
             {
                 do
                 {
-                    Debug.Log("Dando un material");
                     materialID.Value = Random.Range(1, 4);
 
                 } while (GameManager.instance.takenMaterialIds.Contains(materialID.Value));
@@ -94,7 +99,6 @@ namespace HelloWorld
             {
                 do
                 {
-                    Debug.Log("Dando un material");
                     materialID.Value = Random.Range(4, materials.Count);
 
                 } while (GameManager.instance.takenMaterialIds.Contains(materialID.Value));
@@ -168,7 +172,6 @@ namespace HelloWorld
         }
         public void OnColorChanged(int previousValue, int newValue)
         {
-            Debug.Log("Holita?");
             meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.material = materials[materialID.Value];
         }

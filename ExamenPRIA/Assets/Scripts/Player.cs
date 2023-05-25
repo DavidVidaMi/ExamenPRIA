@@ -14,16 +14,24 @@ namespace HelloWorld
 
         //Lista dos materiales dispoñibles
         public List<Material> materials = new List<Material>();
+
+        //Variable que dicta si pode ou non moverse cando algún equipo está cheo
+        public NetworkVariable<bool> canMove = new NetworkVariable<bool>();
         
 
         private MeshRenderer meshRenderer;
         private float speed = 40f;
 
-        //ID do equipo que está cheo, 0 por defecto cando non hai ningún
-        private int fullTeamID = 0;
-
         //Variable que dicta o tamaño máximo de un equipo
-        public int maxTeamMembers = 2;
+        public static int maxTeamMembers = 2;
+
+        //Fago unha instancia do Player para facilitar a comunicación
+        public static Player instance;
+
+        private void Awake()
+        {
+            instance = this;
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -31,6 +39,7 @@ namespace HelloWorld
             if (IsOwner)
             {
                 ChangeTeamIdServerRpc(-1);
+                ChangeCanMoveServerRpc(true);
             }
             materialID.OnValueChanged += OnColorChanged;
             if (IsOwner)
@@ -76,6 +85,14 @@ namespace HelloWorld
         {
             teamID.Value = newTeamId;
             SetMaterialIdServerRpc();
+            GameManager.instance.CheckTeamFull();
+        }
+
+        //Dalle ao cliente a ID do equipo ao que pertence e chamase a un método que se encarga de poñerlle o color axeitado
+        [ServerRpc]
+        void ChangeCanMoveServerRpc(bool canMove, ServerRpcParams rpcParams = default)
+        {
+            this.canMove.Value = canMove;
         }
 
         //Según a ID do equipo que teña e os materiales que estén ocupados asígnaráselle un ou outro
@@ -146,25 +163,7 @@ namespace HelloWorld
             }
         }
 
-        //Mira si hai algún equipo cheo, devolve true si é o caso e cambia a fullTeamID en consecuencia, se non devolve False e seteaa a 0
-        private bool TeamFull()
-        {
-            if(GameManager.instance.playersInTeam1.Value >= maxTeamMembers)
-            {
-                fullTeamID = 1;
-                return true;
-            }
-            else if (GameManager.instance.playersInTeam2.Value >= maxTeamMembers)
-            {
-                fullTeamID = 2;
-                return true;
-            }
-            else
-            {
-                fullTeamID = 0;
-                return false;
-            }
-        }
+        
 
         public override void OnNetworkDespawn()
         {
@@ -175,13 +174,30 @@ namespace HelloWorld
             meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.material = materials[materialID.Value];
         }
+
+        [ClientRpc]
+        public void SetCanMoveClientRpc(ClientRpcParams clientRpcParams = default)
+        {
+            foreach(ulong clientId in clientRpcParams.Send.TargetClientIds)
+            {
+                if(clientId == NetworkManager.Singleton.LocalClient.ClientId){
+                    ChangeCanMoveServerRpc(false);
+                }
+                else
+                {
+                    ChangeCanMoveServerRpc(true);
+                }
+            }
+
+            
+        }
         //Non hai moito que explicar aquí, detecta as teclas de movemento sempre que non haxa un equipo cheo ou seas de ese equipo si está cheo
         //E ao final dille a cada un de que color debe ser e actualiza a lista dos colores que están collidos
         void Update()
         {
             if (IsOwner)
             {
-                if (!TeamFull() || teamID.Value == fullTeamID)
+                if (canMove.Value)
                 {
                     if (Input.GetKey(KeyCode.D))
                     {

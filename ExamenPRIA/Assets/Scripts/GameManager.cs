@@ -16,6 +16,14 @@ namespace HelloWorld
         //Lista dos IDs dos materiales que xa están asignados
         public List<int> takenMaterialIds = new List<int>();
 
+        //ID do equipo que está cheo, 0 por defecto cando non hai ningún
+        public NetworkVariable<int> fullTeamID = new NetworkVariable<int>();
+
+        private void Start()
+        {
+            fullTeamID.Value = 0;
+        }
+
         //Monta a GUI
         void OnGUI()
         {
@@ -90,6 +98,45 @@ namespace HelloWorld
             {
                 takenMaterialIds.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().materialID.Value);
             }
+        }
+
+        //Mira si hai algún equipo cheo, devolve true si é o caso e cambia a fullTeamID en consecuencia, se non devolve False e seteaa a 0
+        public void CheckTeamFull()
+        {
+            if (GameManager.instance.playersInTeam1.Value >= Player.maxTeamMembers)
+            {
+                fullTeamID.Value = 1;
+            }
+            else if (GameManager.instance.playersInTeam2.Value >= Player.maxTeamMembers)
+            {
+                fullTeamID.Value = 2;
+            }
+            else
+            {
+                fullTeamID.Value = 0;
+            }
+            ControlPlayerMovements();
+        }
+
+        private void ControlPlayerMovements()
+        {
+            List<ulong> playersThatCantMove = new List<ulong>();
+            foreach (ulong uid in NetworkManager.Singleton.ConnectedClientsIds)
+            {
+                if(fullTeamID.Value != 0)
+                {
+                    if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().teamID.Value != fullTeamID.Value)
+                    {
+                        playersThatCantMove.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).OwnerClientId);
+                    }
+                }
+            }
+            ClientRpcParams clientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams {TargetClientIds = playersThatCantMove}
+            };
+
+            Player.instance.SetCanMoveClientRpc(clientRpcParams);
         }
     }
 }

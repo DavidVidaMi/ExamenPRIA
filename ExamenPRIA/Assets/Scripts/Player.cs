@@ -47,6 +47,8 @@ namespace HelloWorld
                 //Nada mais spawnear si é propietario spawnearase nunha posición aleatoria do centro
                 SpawnInCenter();
             }
+            //En canto spawnea un xogador píntanse todos os xogadores
+            PaintAllPlayers();
 
         }
 
@@ -170,6 +172,11 @@ namespace HelloWorld
             materialID.OnValueChanged -= OnColorChanged;
         }
         public void OnColorChanged(int previousValue, int newValue)
+        {
+            meshRenderer = GetComponent<MeshRenderer>();
+            meshRenderer.material = materials[materialID.Value];
+        }
+        private void PaintAllPlayers()
         {
             meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.material = materials[materialID.Value];

@@ -187,23 +187,9 @@ namespace HelloWorld
         }
 
         [ClientRpc]
-        public void SetCanMoveClientRpc(ClientRpcParams clientRpcParams = default)
+        public void SetCanMoveClientRpc(bool canMove, ClientRpcParams clientRpcParams)
         {
-            if (!IsOwner) return;
-            Debug.Log(clientRpcParams.Send.TargetClientIds == null);
-            foreach (ulong clientId in clientRpcParams.Send.TargetClientIds)
-            {
-                Debug.Log(clientId == NetworkManager.Singleton.LocalClient.ClientId);
-                if(clientId == NetworkManager.Singleton.LocalClient.ClientId){
-                    ChangeCanMoveServerRpc(false);
-                }
-                else
-                {
-                    ChangeCanMoveServerRpc(true);
-                }
-            }
-
-            
+            ChangeCanMoveServerRpc(canMove);
         }
         //Non hai moito que explicar aquí, detecta as teclas de movemento sempre que non haxa un equipo cheo ou seas de ese equipo si está cheo
         //E ao final dille a cada un de que color debe ser e actualiza a lista dos colores que están collidos

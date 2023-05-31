@@ -120,24 +120,26 @@ namespace HelloWorld
 
         private void ControlPlayerMovements()
         {
-            List<ulong> playersThatCantMove = new List<ulong>();
+            List<NetworkObject> playersThatCantMove = new List<NetworkObject>();
             foreach (ulong uid in NetworkManager.Singleton.ConnectedClientsIds)
             {
                 if(fullTeamID.Value != 0)
                 {
                     if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).GetComponent<Player>().teamID.Value != fullTeamID.Value)
                     {
-                        playersThatCantMove.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid).OwnerClientId);
+                        playersThatCantMove.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid));
                     }
                 }
+                else
+                {
+                    playersThatCantMove.Add(NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid));
+                }
             }
-            ClientRpcParams clientRpcParams = new ClientRpcParams
+            ClientRpcParams clientRpcParams = new ClientRpcParams();
+            foreach (NetworkObject player in playersThatCantMove)
             {
-                Send = new ClientRpcSendParams {TargetClientIds = playersThatCantMove}
-            };
-
-            Debug.Log("Lista que manda o server"+playersThatCantMove.Count);
-            Player.instance.SetCanMoveClientRpc(clientRpcParams);
+                player.GetComponent<Player>().SetCanMoveClientRpc(fullTeamID.Value == 0, clientRpcParams);
+            }
         }
     }
 }
